@@ -1,0 +1,29 @@
+{
+  "title": "Engagement Dashboard",
+  "subtitle": "Performance overview of comment-to-DM automation, keywords, and growth",
+  "stats": {
+    "dms_sent": "DMs Sent",
+    "active_campaigns": "Active Campaigns",
+    "link_clicks": "Link Clicks",
+    "ctr": "CTR",
+    "period_usage": "Current Period Usage",
+    "followers_count": "Followers Count"
+  },
+  "charts": {
+    "growth_title": "Daily Growth & Interactions",
+    "followers_trend": "Followers Trend",
+    "dms_trend": "DMs Sent Trend",
+    "empty_chart": "A point is added daily — the chart appears once there are at least two."
+  },
+  "activity": {
+    "recent_title": "Recent Comment-to-DM Activity",
+    "no_activity": "No replies sent yet. Create and activate your first campaign.",
+    "view_all_logs": "View all logs"
+  },
+  "warnings": {
+    "token_revoked": "Access to Instagram account @{username} has been revoked or expired. Please reconnect to resume DM automation.",
+    "token_expiring": "Token for @{username} will expire in {days} days. Auto-refresh is running in the background.",
+    "reconnect_btn": "Reconnect Account",
+    "settings_btn": "View in Settings"
+  }
+}

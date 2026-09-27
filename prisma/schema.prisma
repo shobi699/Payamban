@@ -1,0 +1,740 @@
+// ManyChat Alternative — B2B Instagram Comment → DM SaaS schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  role              UserRole          @default(USER)
+  referralCode      String?           @unique
+  referredById      String?
+  referrer          User?             @relation("UserReferrals", fields: [referredById], references: [id], onDelete: SetNull)
+  referrals         User[]            @relation("UserReferrals")
+
+  accounts          Account[]
+  sessions          Session[]
+  ownedWorkspaces   Workspace[]       @relation("WorkspaceOwner")
+  workspaceMembers  WorkspaceMember[]
+  sentInvitations   WorkspaceInvitation[] @relation("WorkspaceInvitationsSent")
+  subscriptions     Subscription[]
+  walletTransactions WalletTransaction[]
+  affiliateReferrals AffiliateReferral[] @relation("Referrer")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String
+  owner     User     @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  usagePeriodStart  DateTime @default(now())
+  dmsSentThisPeriod Int      @default(0)
+
+  zernioConnection  ZernioConnection?
+  members           WorkspaceMember[]
+  invitations       WorkspaceInvitation[]
+  instagramAccounts InstagramAccount[]
+  automations       Automation[]
+  dmLogs            DmLog[]
+  trackedLinks      TrackedLink[]
+  linkClicks        LinkClick[]
+  webhookEvents     WebhookEvent[]
+  operationalEvents OperationalEvent[]
+  dmForms           DmForm[]
+  phonebookContacts PhonebookContact[]
+  smsConfiguration  SmsConfiguration?
+  smsLogs           SmsLog[]
+  productShowcases  ProductShowcase[]
+  aiKnowledgeDocs   AiKnowledgeDoc[]
+
+  @@index([ownerId])
+}
+
+model WorkspaceMember {
+  id          String        @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        WorkspaceRole @default(OWNER)
+  createdAt   DateTime      @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+}
+
+model WorkspaceInvitation {
+  id              String                    @id @default(cuid())
+  workspaceId     String
+  email           String
+  role            WorkspaceRole             @default(MEMBER)
+  token           String                    @unique
+  status          WorkspaceInvitationStatus @default(PENDING)
+  invitedByUserId String?
+  expiresAt       DateTime
+  acceptedAt      DateTime?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  invitedBy User?     @relation("WorkspaceInvitationsSent", fields: [invitedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([workspaceId, email])
+  @@index([email])
+  @@index([workspaceId])
+  @@index([status])
+}
+
+model InstagramAccount {
+  id                String   @id @default(cuid())
+  workspaceId       String
+  instagramId       String   @unique
+  username          String
+  name              String?
+  provider          InstagramProvider @default(META)
+  zernioAccountId   String?
+  accessToken       String
+  tokenExpiresAt    DateTime?
+  tokenStatus       TokenStatus       @default(HEALTHY)
+  webhookSubscribed Boolean           @default(false)
+  appId             String?
+  appSecret         String?
+  pageId            String?
+  webhookVerifyToken String?
+  connectedAt       DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  automations Automation[]
+  dmLogs      DmLog[]
+  linkClicks  LinkClick[]
+  followerSnapshots FollowerSnapshot[]
+  posts             InstagramPost[]
+  unansweredComments UnansweredComment[]
+
+  @@index([workspaceId])
+}
+
+/// Daily follower total for one account. Instagram only retains ~30 days of
+/// account insights, so history beyond that window exists only because we
+/// record it here. One row per account per day.
+model FollowerSnapshot {
+  id                 String   @id @default(cuid())
+  instagramAccountId String
+  /// Midnight UTC of the day this count belongs to.
+  date               DateTime @db.Date
+  followersCount     Int
+  /// True when the row was reconstructed from follower_count insight deltas
+  /// rather than observed directly, so it can be corrected later.
+  backfilled         Boolean  @default(false)
+  createdAt          DateTime @default(now())
+
+  instagramAccount InstagramAccount @relation(fields: [instagramAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([instagramAccountId, date])
+  @@index([instagramAccountId, date])
+}
+
+model Automation {
+  id                 String   @id @default(cuid())
+  workspaceId        String
+  instagramAccountId String
+
+  name           String
+  goal           String?
+  postId         String?
+  postUrl        String?
+  pendingNextReel Boolean @default(false)
+  matchAnyPost   Boolean @default(false)
+  keywords       String[]
+  matchAnyWord   Boolean @default(false)
+  // Also fire this campaign when someone sends a DM whose text matches the
+  // keywords above. Independent of the post trigger — a DM has no media, so
+  // postId / matchAnyPost do not apply to it.
+  dmTriggerEnabled Boolean @default(false)
+  dmMessage      String
+  openingDmEnabled     Boolean @default(false)
+  openingDmMessage     String?
+  openingDmButtonLabel String?
+  linkButtonLabel      String?
+  requireFollow           Boolean @default(false)
+  followPromptMessage     String?
+  followPromptButtonLabel String?
+  followUpEnabled Boolean @default(false)
+  followUpMessage String?
+  // Minutes to wait after the link is delivered before sending the follow-up.
+  // 0 sends it right away.
+  followUpDelayMinutes Int @default(0)
+  publicReplyEnabled Boolean @default(false)
+  publicReplyMessage String?
+  publicReplyMessages String[] @default([])
+  isActive       Boolean @default(true)
+  wholeWordMatch Boolean @default(true)
+  reportShareSlug    String? @unique
+  reportShareEnabled Boolean @default(true)
+  storyMentionEnabled Boolean @default(false)
+  storyMentionMessage String?
+  storyReplyEnabled   Boolean @default(false)
+  storyReplyMessage   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspace        Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  instagramAccount InstagramAccount @relation(fields: [instagramAccountId], references: [id], onDelete: Cascade)
+  dmLogs           DmLog[]
+  trackedLinks     TrackedLink[]
+  linkClicks       LinkClick[]
+
+  @@index([workspaceId])
+  @@index([instagramAccountId])
+  @@index([postId])
+}
+
+model DmLog {
+  id                 String     @id @default(cuid())
+  workspaceId        String
+  automationId       String
+  instagramAccountId String
+
+  commenterId   String
+  commenterName String?
+  commentText   String
+  commentId     String
+  matchedKeyword String?
+  status        DmStatus @default(PENDING)
+  attempts      Int      @default(0)
+  dmSentAt      DateTime?
+  errorMessage  String?
+
+  // The public comment reply is delivered independently of the DM, so its
+  // outcome is tracked separately. publicReplySentAt makes it idempotent across
+  // retries; a DM failure never blocks or re-posts the public reply.
+  dmDeliveryUnconfirmed Boolean @default(false)
+  publicReplyDeliveryUnconfirmed Boolean @default(false)
+  publicReplySentAt DateTime?
+  publicReplyError  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspace        Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  automation       Automation       @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  instagramAccount InstagramAccount @relation(fields: [instagramAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([automationId, commentId])
+  @@index([workspaceId])
+  @@index([automationId])
+  @@index([instagramAccountId])
+  @@index([status])
+}
+
+// Legacy reconciliation model; currently unwired. Runtime code does not read
+// or write ProcessedComment. Current reconciliation dedup uses owner-reply
+// checks and DmLog guards instead.
+model ProcessedComment {
+  id                 String   @id @default(cuid())
+  instagramAccountId String
+  commentId          String   @unique
+  source             String // "WEBHOOK" | "POLLING"
+  seenAt             DateTime @default(now())
+
+  @@index([instagramAccountId])
+}
+
+model TrackedLink {
+  id             String   @id @default(cuid())
+  workspaceId    String
+  automationId   String
+  slug           String   @unique
+  label          String?
+  destinationUrl String
+  // Which DM button this link is, starting at 0. Read links with
+  // TRACKED_LINK_ORDER (lib/tracking/link-order.ts), never by createdAt alone:
+  // links saved in one request share a createdAt, and Postgres returns tied
+  // rows in no fixed order.
+  position       Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  workspace  Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  automation Automation  @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  clicks     LinkClick[]
+
+  @@index([workspaceId])
+  @@index([automationId])
+}
+
+model LinkClick {
+  id                 String   @id @default(cuid())
+  workspaceId        String
+  automationId       String
+  instagramAccountId String
+  trackedLinkId      String
+  ipHash             String?
+  userAgent          String?
+  referrer           String?
+  createdAt          DateTime @default(now())
+
+  workspace        Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  automation       Automation       @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  instagramAccount InstagramAccount @relation(fields: [instagramAccountId], references: [id], onDelete: Cascade)
+  trackedLink      TrackedLink      @relation(fields: [trackedLinkId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([automationId])
+  @@index([instagramAccountId])
+  @@index([trackedLinkId])
+  @@index([createdAt])
+  @@index([workspaceId, createdAt])
+}
+
+model WebhookEvent {
+  id          String        @id @default(cuid())
+  workspaceId String?
+  object      String?
+  payload     Json
+  status      WebhookStatus @default(PENDING)
+  errorMessage String?
+  createdAt   DateTime      @default(now())
+  processedAt DateTime?
+
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId])
+  @@index([status])
+}
+
+model OperationalEvent {
+  id          String                @id @default(cuid())
+  workspaceId String?
+  source      OperationalEventSource
+  level       OperationalEventLevel @default(INFO)
+  message     String
+  payload     Json?
+  createdAt   DateTime              @default(now())
+  resolvedAt  DateTime?
+
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId])
+  @@index([source])
+  @@index([level])
+  @@index([createdAt])
+}
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum WorkspaceInvitationStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+  EXPIRED
+}
+
+enum DmStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED_DEDUP
+  SKIPPED_RATE_LIMIT
+  SKIPPED_PLAN_LIMIT
+  SKIPPED_NO_MATCH
+}
+
+enum WebhookStatus {
+  PENDING
+  PROCESSED
+  FAILED
+}
+
+enum OperationalEventSource {
+  WORKER
+  TOKEN_REFRESH
+  HEALTH
+  SYSTEM
+}
+
+enum OperationalEventLevel {
+  INFO
+  WARNING
+  ERROR
+}
+
+
+enum TokenStatus {
+  HEALTHY
+  EXPIRING_SOON
+  EXPIRED
+  REVOKED
+}
+
+enum InstagramProvider {
+  META
+  ZERNIO
+}
+
+model ZernioConnection {
+  workspaceId    String @id
+  apiKey         String
+  profileId      String?
+  webhookId      String?
+  webhookSecret  String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+// Claims persist independently of BullMQ retention so old taps never resend.
+model PostbackDelivery {
+  id String @id
+  createdAt DateTime @default(now())
+}
+
+// -------------------------------------------------------------
+// COMMERCIAL SAAS & DIRECTAM EXPANSIONS (Phase 1-4)
+// -------------------------------------------------------------
+
+enum UserRole {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIAL
+  EXPIRED
+  CANCELLED
+}
+
+enum TransactionType {
+  PLAN_PURCHASE
+  CREDIT_TOPUP
+  COMMISSION_PAYOUT
+}
+
+enum TransactionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum SmsProvider {
+  KAVENEGAR
+  FARAZ_SMS
+  SIMULATOR
+}
+
+enum CommentStatus {
+  UNANSWERED
+  REPLIED
+  DISMISSED
+}
+
+model Plan {
+  id                   String         @id @default(cuid())
+  name                 String         @unique // free, standard, pro, enterprise
+  nameFa               String         // رایگان, برنزی, طلایی, سازمانی
+  descriptionFa        String?
+  priceTomans          Int            @default(0)
+  durationDays         Int            @default(30)
+  maxInstagramAccounts Int            @default(1)
+  monthlyDmLimit       Int            @default(500)
+  monthlySmsLimit      Int            @default(0)
+  hasAiResponder       Boolean        @default(false)
+  hasFormBuilder       Boolean        @default(true)
+  hasShowcase          Boolean        @default(true)
+  hasAffiliate         Boolean        @default(true)
+  isActive             Boolean        @default(true)
+  isDefault            Boolean        @default(false)
+  sortOrder            Int            @default(0)
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+
+  subscriptions        Subscription[]
+}
+
+model Subscription {
+  id        String             @id @default(cuid())
+  userId    String
+  planId    String
+  startsAt  DateTime           @default(now())
+  expiresAt DateTime
+  status    SubscriptionStatus @default(ACTIVE)
+  dmsUsed   Int                @default(0)
+  smsUsed   Int                @default(0)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Restrict)
+
+  @@index([userId])
+  @@index([planId])
+  @@index([status])
+}
+
+model WalletTransaction {
+  id             String            @id @default(cuid())
+  userId         String
+  amountTomans   Int
+  type           TransactionType
+  status         TransactionStatus @default(PENDING)
+  authority      String?           @unique
+  refId          String?
+  paymentGateway String            @default("ZARINPAL")
+  description    String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}
+
+model PlatformSetting {
+  id           String   @id @default(cuid())
+  key          String   @unique
+  label        String
+  description  String?
+  type         String   @default("text") // text, number, boolean, select
+  value        String
+  defaultValue String
+  category     String   @default("general") // general, pricing, sms, payment, ai
+  isEnabled    Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([category])
+}
+
+model InstagramPost {
+  id                 String           @id @default(cuid())
+  instagramAccountId String
+  postId             String
+  caption            String?
+  mediaType          String           @default("IMAGE") // IMAGE, VIDEO, CAROUSEL_ALBUM
+  mediaUrl           String?
+  permalink          String?
+  likeCount          Int              @default(0)
+  commentsCount      Int              @default(0)
+  timestamp          DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  instagramAccount   InstagramAccount @relation(fields: [instagramAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([instagramAccountId, postId])
+  @@index([instagramAccountId])
+}
+
+model UnansweredComment {
+  id                 String           @id @default(cuid())
+  instagramAccountId String
+  postId             String
+  commentId          String           @unique
+  commenterId        String
+  commenterUsername  String
+  text               String
+  status             CommentStatus    @default(UNANSWERED)
+  replyText          String?
+  repliedAt          DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  instagramAccount   InstagramAccount @relation(fields: [instagramAccountId], references: [id], onDelete: Cascade)
+
+  @@index([instagramAccountId])
+  @@index([status])
+}
+
+model DmForm {
+  id                     String             @id @default(cuid())
+  workspaceId            String
+  title                  String
+  description            String?
+  triggerKeyword         String
+  isActive               Boolean            @default(true)
+  fields                 Json               // [{ id, label, type, required }]
+  completionMessage      String
+  smsNotificationEnabled Boolean            @default(false)
+  smsTemplate            String?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  workspace   Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  submissions DmFormSubmission[]
+
+  @@index([workspaceId])
+  @@index([triggerKeyword])
+}
+
+model DmFormSubmission {
+  id                String   @id @default(cuid())
+  formId            String
+  commenterId       String
+  commenterUsername String?
+  data              Json     // { [fieldId]: answer }
+  phone             String?
+  createdAt         DateTime @default(now())
+
+  form DmForm @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@index([formId])
+  @@index([phone])
+}
+
+model PhonebookContact {
+  id                String    @id @default(cuid())
+  workspaceId       String
+  instagramUsername String?
+  name              String?
+  phone             String
+  email             String?
+  tags              String[]  @default([])
+  source            String    @default("DM") // FORM, DM, MANUAL
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, phone])
+  @@index([workspaceId])
+  @@index([phone])
+}
+
+model SmsConfiguration {
+  id          String      @id @default(cuid())
+  workspaceId String      @unique
+  provider    SmsProvider @default(SIMULATOR)
+  apiKey      String?
+  senderLine  String?
+  isActive    Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model SmsLog {
+  id               String   @id @default(cuid())
+  workspaceId      String
+  recipientPhone   String
+  messageText      String
+  status           String   @default("SENT") // SENT, FAILED
+  providerResponse String?
+  createdAt        DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([recipientPhone])
+}
+
+model ProductShowcase {
+  id             String    @id @default(cuid())
+  workspaceId    String
+  title          String
+  triggerKeyword String
+  items          Json      // [{ id, name, priceTomans, imageUrl, buyUrl, description }]
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([triggerKeyword])
+}
+
+model AffiliateReferral {
+  id               String   @id @default(cuid())
+  referrerId       String
+  referredUserId   String
+  commissionAmount Int      @default(0)
+  status           String   @default("PENDING") // PENDING, PAID
+  createdAt        DateTime @default(now())
+
+  referrer User @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+
+  @@index([referrerId])
+  @@index([referredUserId])
+}
+
+model AiKnowledgeDoc {
+  id          String    @id @default(cuid())
+  workspaceId String
+  title       String
+  content     String    @db.Text
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([isActive])
+}
+

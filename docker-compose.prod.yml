@@ -1,0 +1,103 @@
+# OpenReply / Dayrect Pro — Production Full-Stack Compose Stack
+# Run: docker compose -f docker-compose.prod.yml up -d --build
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: dayrect-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-openreply}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_secure_pass}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dayrect-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: dayrect-redis
+    restart: always
+    command: redis-server --appendonly yes
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dayrect-network
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dayrect-web
+    restart: always
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_secure_pass}@postgres:5432/${POSTGRES_DB:-openreply}?schema=public
+      REDIS_URL: redis://redis:6379
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      CRON_SECRET: ${CRON_SECRET}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      ZARINPAL_MERCHANT_ID: ${ZARINPAL_MERCHANT_ID:-zarinpal_demo_merchant}
+      ZARINPAL_SANDBOX: ${ZARINPAL_SANDBOX:-true}
+      AI_API_KEY: ${AI_API_KEY}
+      META_GRAPH_API_VERSION: ${META_GRAPH_API_VERSION:-v25.0}
+      INSTAGRAM_APP_ID: ${INSTAGRAM_APP_ID}
+      INSTAGRAM_APP_SECRET: ${INSTAGRAM_APP_SECRET}
+      FACEBOOK_APP_SECRET: ${FACEBOOK_APP_SECRET}
+      WEBHOOK_VERIFY_TOKEN: ${WEBHOOK_VERIFY_TOKEN}
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - dayrect-network
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dayrect-worker
+    restart: always
+    command: ["npm", "run", "worker"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_secure_pass}@postgres:5432/${POSTGRES_DB:-openreply}?schema=public
+      REDIS_URL: redis://redis:6379
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      META_GRAPH_API_VERSION: ${META_GRAPH_API_VERSION:-v25.0}
+      AI_API_KEY: ${AI_API_KEY}
+      EGRESS_PROXY_URL: ${EGRESS_PROXY_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - dayrect-network
+
+volumes:
+  pgdata:
+  redisdata:
+
+networks:
+  dayrect-network:
+    driver: bridge

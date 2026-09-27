@@ -1,0 +1,65 @@
+{
+  "app_name": "پیام‌بان",
+  "direction": "rtl",
+  "nav": {
+    "dashboard": "پیشخوان",
+    "overview": "نمای کلی",
+    "inbox": "صندوق پیام",
+    "campaigns": "کمپین‌ها",
+    "logs": "گزارش دایرکت‌ها",
+    "settings": "تنظیمات",
+    "diagnostics": "عیب‌یابی سیستم"
+  },
+  "actions": {
+    "save": "ذخیره تغییرات",
+    "saving": "در حال ذخیره…",
+    "cancel": "انصراف",
+    "delete": "حذف",
+    "edit": "ویرایش",
+    "connect": "اتصال",
+    "connect_instagram": "اتصال اکانت اینستاگرام",
+    "disconnect": "قطع اتصال",
+    "retry": "تلاش مجدد",
+    "copy": "کپی",
+    "copied": "کپی شد",
+    "filter": "فیلتر",
+    "search": "جستجو…",
+    "back": "بازگشت"
+  },
+  "status": {
+    "all": "همه",
+    "active": "فعال",
+    "paused": "متوقف",
+    "sent": "ارسال شد",
+    "failed": "ناموفق",
+    "pending": "در انتظار",
+    "rate_limited": "محدودیت نرخ (Rate Limited)",
+    "plan_limit": "محدودیت طرح",
+    "duplicate": "تکراری",
+    "healthy": "متصل و پایدار",
+    "expiring_soon": "نیاز به تمدید",
+    "expired": "منقضی شده",
+    "revoked": "دسترسی لغو شده"
+  },
+  "roles": {
+    "owner": "مالک",
+    "admin": "مدیر",
+    "member": "عضو"
+  },
+  "labels": {
+    "self_hosted": "خودمیزبان (Self-hosted)",
+    "menu": "منو",
+    "toggle_sidebar": "تغییر وضعیت سایدبار",
+    "language": "زبان سامانه",
+    "interface_language": "زبان رابط کاربری",
+    "accounts_count": "{count} اکانت",
+    "account": "اکانت",
+    "all_accounts": "همه اکانت‌ها",
+    "all_time": "تمام زمان‌ها"
+  },
+  "messages": {
+    "sign_in_link_sent": "لینک ورود به ایمیل شما ارسال شد.",
+    "save_success": "تغییرات با موفقیت ذخیره شد.",
+    "error_occurred": "خطایی رخ داده است. لطفاً مجدداً تلاش کنید."
+  }
+}

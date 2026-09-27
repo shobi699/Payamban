@@ -1,0 +1,26 @@
+{
+  "title": "DM Delivery Logs",
+  "subtitle": "Track delivery status, timestamps, and details of all private replies sent to commenters",
+  "columns": {
+    "recipient": "Recipient",
+    "trigger_comment": "Trigger Comment",
+    "reply_sent": "Private Reply Sent",
+    "status": "Status",
+    "timestamp": "Timestamp",
+    "details": "Details"
+  },
+  "filters": {
+    "all_statuses": "All Statuses",
+    "sent_only": "Successful Sends",
+    "failed_only": "Failed Only",
+    "rate_limited_only": "Rate Limited"
+  },
+  "empty_logs": "No delivery logs found.",
+  "errors": {
+    "rate_limit": "Instagram hourly cap reached; message was queued for retry.",
+    "token_expired": "Access token expired. Please reconnect in Settings.",
+    "already_replied": "This comment has already received a private reply (Meta policy).",
+    "user_cannot_be_found": "Commenter's account cannot be reached or DMs are restricted.",
+    "outside_window": "Comment was left more than 7 days ago (outside Meta allowed window)."
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "app_name": "Payamban",
+  "direction": "ltr",
+  "nav": {
+    "dashboard": "Dashboard",
+    "overview": "Overview",
+    "inbox": "Inbox",
+    "campaigns": "Campaigns",
+    "logs": "DM Logs",
+    "settings": "Settings",
+    "diagnostics": "Diagnostics"
+  },
+  "actions": {
+    "save": "Save changes",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "connect": "Connect",
+    "connect_instagram": "Connect Instagram",
+    "disconnect": "Disconnect",
+    "retry": "Retry",
+    "copy": "Copy",
+    "copied": "Copied",
+    "filter": "Filter",
+    "search": "Search…",
+    "back": "Back"
+  },
+  "status": {
+    "all": "All",
+    "active": "Active",
+    "paused": "Paused",
+    "sent": "Sent",
+    "failed": "Failed",
+    "pending": "Pending",
+    "rate_limited": "Rate limited",
+    "plan_limit": "Plan limit",
+    "duplicate": "Duplicate",
+    "healthy": "Connected & Healthy",
+    "expiring_soon": "Expiring soon",
+    "expired": "Expired",
+    "revoked": "Access revoked"
+  },
+  "roles": {
+    "owner": "Owner",
+    "admin": "Admin",
+    "member": "Member"
+  },
+  "labels": {
+    "self_hosted": "Self-hosted",
+    "menu": "Menu",
+    "toggle_sidebar": "Toggle sidebar",
+    "language": "Language",
+    "interface_language": "Interface language",
+    "accounts_count": "{count} accounts",
+    "account": "Account",
+    "all_accounts": "All accounts",
+    "all_time": "All time"
+  },
+  "messages": {
+    "sign_in_link_sent": "A sign-in link was sent to your email.",
+    "save_success": "Changes saved successfully.",
+    "error_occurred": "An error occurred. Please try again."
+  }
+}

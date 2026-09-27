@@ -1,0 +1,41 @@
+{
+  "title": "Automated Campaigns",
+  "subtitle": "Set up comment-to-DM automated response scenarios for posts and reels",
+  "new_campaign": "New Campaign",
+  "edit_campaign": "Edit Campaign",
+  "empty_state": "No campaigns created yet.",
+  "form": {
+    "name": "Campaign Name",
+    "name_placeholder": "e.g., Summer Discount Catalog Delivery",
+    "target_post": "Target Post or Reel",
+    "all_posts": "Active on all posts and reels",
+    "specific_post": "A specific post or reel",
+    "select_post": "Select a post from Instagram",
+    "keywords_title": "Trigger Keywords",
+    "keywords_desc": "When someone comments any of these words, the reply will be sent.",
+    "keywords_placeholder": "Type keyword and press Enter… (e.g. LINK, PRICE, BUY)",
+    "matching_mode": "Keyword Matching Mode",
+    "exact_match": "Exact match (whole word)",
+    "partial_match": "Partial match (contains keyword)",
+    "dm_response": "Private Reply (Direct Message)",
+    "dm_placeholder": "Hey {username}! Here is the information you requested:",
+    "dm_helper": "Use {username} to automatically insert the commenter's handle.",
+    "add_link_button": "+ Add A Link Button",
+    "button_title": "Button Title (max 20 chars)",
+    "button_title_placeholder": "View Offer 🎁",
+    "button_url": "Destination URL",
+    "button_url_placeholder": "https://example.com/product",
+    "public_reply": "Public Comment Reply",
+    "public_reply_desc": "Post a visible comment reply under the user's comment to boost post reach.",
+    "public_reply_placeholder": "Sent you a DM with the details! Check your inbox 🙏",
+    "add_another_reply": "+ Add another random reply",
+    "follow_gate": "Follow Gate",
+    "follow_gate_desc": "Only deliver the link if the user follows your account.",
+    "status_active": "Campaign is active"
+  },
+  "preview": {
+    "title": "Instagram DM Live Preview",
+    "subtitle": "How the message will appear inside the commenter's inbox",
+    "tap_hint": "Official Meta interactive button template"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "title": "Workspace Settings & Integrations",
+  "subtitle": "Manage your profile, Instagram account connection, and team members",
+  "instagram": {
+    "title": "Instagram Connection",
+    "subtitle": "Comment webhooks and private replies depend on this connection.",
+    "status": "Connection Status",
+    "connected_as": "Connected as",
+    "expires_at": "Token expires at",
+    "token_healthy": "Token is active and healthy",
+    "token_expiring": "Expiring within 10 days (auto-renewing)",
+    "token_expired": "Token expired. Please reconnect.",
+    "connect_button": "Connect Instagram with Official Meta Login",
+    "disconnect_button": "Disconnect this account",
+    "confirm_disconnect": "Are you sure you want to disconnect? All active campaigns for this account will stop."
+  },
+  "interface": {
+    "title": "Interface Language",
+    "subtitle": "Saved in this browser. Outgoing campaign messages remain unchanged."
+  },
+  "team": {
+    "title": "Workspace Members",
+    "subtitle": "Manage member roles and invitations for this workspace",
+    "invite_button": "Invite Member",
+    "email_placeholder": "Colleague's email…",
+    "role_select": "Role"
+  }
+}
